@@ -19,7 +19,7 @@ library(ggplot2)
 
 The dataset is a wrangled version of the 2010 common core dataset from NCES. The wrangling steps are documented in [Part_1.ipynb](https://github.com/albemlee/schooldistrictclassification/blob/master/notebooks/Part_1.ipynb). There should be 365 variables and 18,175 observations.
 
-```{r}
+```{r, echo=TRUE}
 # Load data
 data <- read.csv('outputs/encoded_data_2010.csv')
 data <- data %>% mutate_if(is.integer,as.numeric)
