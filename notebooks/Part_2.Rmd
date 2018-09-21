@@ -19,7 +19,7 @@ library(ggplot2)
 
 The dataset is a wrangled version of the 2010 common core dataset from NCES. The wrangling steps are documented in [Part_1.ipynb](https://github.com/albemlee/schooldistrictclassification/blob/master/notebooks/Part_1.ipynb). There should be 365 variables and 18,175 observations.
 
-```{r, echo=TRUE}
+```{r, results='show'}
 # Load data
 data <- read.csv('outputs/encoded_data_2010.csv')
 data <- data %>% mutate_if(is.integer,as.numeric)
@@ -31,12 +31,12 @@ print(dim(data))
 Prior to this analysis, the dataset was already wrangled and variables with more than half the values missing were removed. As a sanity check, I made sure the wrangled dataset does not contain too many missing values.
 
 ```{r}
-print(paste('Total Cells', 18175*356, sep=': '))
+print(paste('Total Cells', 18175*177, sep=': '))
 print(paste('Total Missing Cells', sum(is.na(data)), sep=': '))
 print(paste('Proportion of Cells Missing', sum(is.na(data))/(18175*356), sep=': '))
 ```
 
-Over 20 percent of the cells are missing. Next, I want to know which columns have the most missing values. Given that this dataset was already wrangled, no column should have more than 9,100 missing values.
+About 5 percent of the cells are missing. Next, I want to know which columns have the most missing values.
 
 ```{r}
 missing_value_counts = c()
@@ -48,15 +48,15 @@ for(column in names(data)){
 missing_value_counts = data.frame(names(data), missing_value_counts)
 names(missing_value_counts) <- c('column', 'missing_value_count')
 print(
-  paste(
-    'Columns with over 9,100 missing values:',
-    nrow(missing_value_counts %>%
-             filter(missing_value_count > 9100) %>%
-             select(column))
-  ))
+    missing_value_counts %>%
+      select(column, missing_value_count) %>%
+      arrange(desc(missing_value_count)) %>%
+      top_n(5)
+)
+    
 ```
 
-There are no columns with over 9,100 missing values. Let's see the distribution of missing values.
+Let's see the distribution of missing values.
 
 ```{r}
 ggplot(missing_value_counts, aes(missing_value_count)) +
@@ -65,6 +65,177 @@ ggplot(missing_value_counts, aes(missing_value_count)) +
 
 ```{r}
 missing_value_counts %>%
-  filter(missing_value_count < 1500) %>%
+  filter(missing_value_count < 2000) %>%
   select(column)
 ```
+
+I will be focusing on features with less than 2,000 missing values.
+
+```{r}
+clustering_set <- data %>% select(
+  total_schools,
+  administrators_district,
+  administrators_school,
+  teachers_total,
+  teachers_elementary,
+  teachers_secondary,
+  staff_student_support,
+  special_education_students,
+  english_language_learners,
+  white_students,
+  white_male_students,
+  white_female_students,
+  hispanic_students,
+  black_non_hispanic_students,
+  librarian_media_specialists,
+  hispanic_male_students,
+  hispanic_female_students,
+  black_non_hispanic_male_students,
+  instructional_aides,
+  black_non_hispanic_female_students,
+  total_students,
+  total_revenue,
+  total_federal_revenue,
+  federal_revenue_state_title_i,
+  federal_revenue_ideas,
+  federal_revenue_math_science_quality,
+  federal_revenue_drug_free,
+  federal_revenue_vocational_tech_training,
+  federal_revenue_thru_state_bilingual_education,
+  federal_revenue_thru_state_other,
+  federal_revenue_thru_state_child_nutrition_program,
+  federal_revenue_nonspecified,
+  federal_revenue_impact_aid,
+  federal_revenue_indian_education,
+  federal_revenue_other,
+  total_state_revenue,
+  state_revenue_general_formula_assistance,
+  state_revenue_staff_improvement,
+  state_revenue_special_education,
+  state_revenue_compensatory_basic_training,
+  state_revenue_bilingual_education,
+  state_revenue_gifted_talented,
+  state_revenue_vocational_programs,
+  state_revenue_school_lunch,
+  state_revenue_capital_outlay_debt_services,
+  state_revenue_transportation,
+  state_revenue_other,
+  state_revenue_nonspecified,
+  state_revenue_employee_benefits,
+  state_revenue_not_employee_benefits,
+  total_local_revenue,
+  local_revenue_other_school_systems,
+  local_revenue_cities_counties,
+  local_revenue_tuition_fee_pupils_parents,
+  local_revenue_transportation_fee_pupil_parents,
+  local_revenue_school_lunch,
+  local_revenue_textbook_sale_rental,
+  local_revenue_district_activity_receipt,
+  local_revenue_student_fee_nonspecified,
+  local_revenue_other_sales_services,
+  local_revenue_rent_royalties,
+  local_revenue_property_sales,
+  local_revenue_interest_earnings,
+  local_revenue_fines_forfeits,
+  local_revenue_private_contributions,
+  local_revenue_miscellaneous,
+  local_revenue_NCES,
+  total_expenditure,
+  total_expenditure_elementary_secondary,
+  total_expenditure_instruction,
+  total_expenditure_instruction_public,
+  expenditure_private_school,
+  expenditure_charter_school,
+  total_expenditure_support_services,
+  expenditure_support_services_pupils,
+  expenditure_support_services_instructional_staff,
+  expenditure_support_services_general_administration,
+  expenditure_support_services_school_administration,
+  expenditure_support_services_maintenance,
+  expenditure_support_services_transportation,
+  expenditure_support_services_business,
+  expenditure_support_services_nonspecified,
+  total_expenditure_other_elementary_secondary,
+  expenditure_food_service,
+  expenditure_enterprise,
+  expenditure_other_elementary_secondary,
+  total_expenditure_non_elementary_secondary,
+  expenditure_non_elementary_secondary_community_service,
+  expenditure_non_elementary_secondary_adult_education,
+  expenditure_non_elementary_secondary_other,
+  total_expenditure_capital_outlay,
+  expenditure_capital_outlay_construction,
+  expenditure_capital_outlay_land_existing_structures,
+  expenditure_capital_outlay_instructional_equipment,
+  expenditure_capital_outlay_other_equipment,
+  expenditure_capital_outlay_nonspecified,
+  payments_state_government,
+  payments_local_government,
+  payments_other_school_systems,
+  interest_on_debt,
+  total_salaries,
+  salaries_instruction,
+  salaries_regular_education,
+  salaries_special_education,
+  salaries_vocationall_education,
+  salaries_other_education,
+  salaries_support_services_pupils,
+  salaries_support_services_instructional_staff,
+  salaries_support_services_general_administration,
+  salaries_support_services_school_administration,
+  salaries_support_services_maintenance,
+  salaries_support_transportation,
+  salaries_support_services_business,
+  salaries_food_service,
+  total_employee_benefits,
+  employee_benefits_instruction,
+  employee_benefits_support_services_pupil,
+  employee_benefits_support_services_instructional_staff,
+  employee_benefits_support_services_general_administration,
+  employee_benefits_support_services_school_administration,
+  employee_benefits_support_services_maintenance,
+  employee_benefits_support_transportation,
+  employee_benefits_support_services_business,
+  employee_benefits_food_service,
+  employee_benefits_enterprise,
+  textbooks,
+  long_term_debt_outstanding_beginning_fiscal_year,
+  long_term_debt_issued_during_fiscal_year,
+  long_term_debt_retired_during_fiscal_year,
+  long_term_debt_outstanding_end_fiscal_year,
+  short_term_debt_outstanding_beginning_fiscal_year,
+  short_term_debt_outstanding_end_fiscal_year,
+  ARRA_revenue,
+  ARRA_current_expenditures,
+  ARRA_capital_outlay_expenditures,
+  asian_hawaiian_native_pacific_islander_students,
+  american_indian_alaskan_native_students,
+  asian_hawaiian_native_pacific_islander_male_students,
+  asian_hawaiian_native_pacific_islander_female_students,
+  american_indian_alaskan_native_male_students,
+  exist_five_years
+)
+
+clustering_set <- na.omit(clustering_set)
+
+for (i in 2:10){
+  clust <- kmeans(select(clustering_set, -one_of("exist_five_years")), centers=i, iter.max=30)
+  print(paste(i, ':', sum(clust$withinss)/clust$totss))
+}
+
+```
+
+```{r}
+clustering_set %>%
+  group_by(cluster) %>%
+  summarize(sum(exist_five_years), n())
+
+
+```
+
+
+
+
+
+
+
